@@ -3,23 +3,36 @@ pipeline {
 
     stages {
 
+        stage('Checkout') {
+            steps {
+                echo 'Source code checked out from GitHub'
+            }
+        }
+
         stage('Build WAR') {
             steps {
-                dir('/home/ubuntu/smartclinic') {
-                    sh 'mvn clean package'
-                }
+                sh 'mvn clean package'
             }
         }
 
         stage('Verify WAR') {
             steps {
-                sh 'test -f /home/ubuntu/smartclinic/target/smartclinic.war'
+                sh '''
+                    test -f target/smartclinic.war
+                    echo "WAR artifact created successfully"
+                    ls -lh target/smartclinic.war
+                '''
             }
         }
 
         stage('Deploy') {
             steps {
                 sh '''
+                    echo "Deploying SmartClinic WAR..."
+
+                    docker cp target/smartclinic.war \
+                    smartclinic-tomcat:/usr/local/tomcat/webapps/smartclinic.war
+
                     docker restart smartclinic-tomcat
                 '''
             }
@@ -28,8 +41,13 @@ pipeline {
         stage('Health Check') {
             steps {
                 sh '''
+                    echo "Waiting for Tomcat..."
                     sleep 10
-                    curl -f http://localhost:8081/smartclinic/
+
+                    curl -fsS http://localhost:8081/smartclinic/ \
+                    | grep -q "Status: Healthy"
+
+                    echo "SmartClinic health check passed"
                 '''
             }
         }
@@ -37,11 +55,11 @@ pipeline {
 
     post {
         success {
-            echo 'SmartClinic deployment successful'
+            echo 'SmartClinic CI/CD deployment successful'
         }
 
         failure {
-            echo 'SmartClinic deployment failed'
+            echo 'SmartClinic CI/CD deployment failed'
         }
     }
 }
