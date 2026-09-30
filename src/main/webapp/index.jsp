@@ -10,7 +10,7 @@
 
 <h2>Patient Management System</h2>
 
-<p>Application Version: 1.0.0</p>
+<p>Application Version: 1.3.0</p>
 
 <p>Status: Healthy</p>
 
